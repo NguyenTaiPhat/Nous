@@ -1,0 +1,65 @@
+--// Rainbow per-letter (mỗi ký tự lệch pha một chút)
+local RunService = game:GetService("RunService")
+local Players = game:GetService("Players")
+local lp = Players.LocalPlayer
+
+local TEXT = "PREMIUM EDITION  •  FPS BOOST"
+
+local function createPerLetterRainbow()
+    local sg = Instance.new("ScreenGui")
+    sg.IgnoreGuiInset = true
+    sg.ResetOnSpawn = false
+    sg.Parent = lp:WaitForChild("PlayerGui")
+
+    local holder = Instance.new("Frame")
+    holder.Size = UDim2.new(0, 0, 0, 34)
+    holder.Position = UDim2.new(1, -20, 1, -54)          -- góc dưới phải
+    holder.BackgroundTransparency = 1
+    holder.Parent = sg
+
+    local uiList = Instance.new("UIListLayout")
+    uiList.FillDirection = Enum.FillDirection.Horizontal
+    uiList.HorizontalAlignment = Enum.HorizontalAlignment.Center
+    uiList.VerticalAlignment = Enum.VerticalAlignment.Center
+    uiList.Parent = holder
+
+    local hueOffset = 0
+
+    for i = 1, #TEXT do
+        local char = TEXT:sub(i,i)
+        if char == " " then
+            local space = Instance.new("TextLabel")
+            space.Size = UDim2.new(0, 10, 0, 34)  -- khoảng cách giữa chữ
+            space.BackgroundTransparency = 1
+            space.Text = ""
+            space.Parent = holder
+        else
+            local lbl = Instance.new("TextLabel")
+            lbl.Size = UDim2.new(0, 18, 0, 34)
+            lbl.BackgroundTransparency = 1
+            lbl.Font = Enum.Font.GothamBlack
+            lbl.Text = char
+            lbl.TextSize = 24
+            lbl.TextStrokeTransparency = 0.75
+            lbl.TextStrokeColor3 = Color3.new(0,0,0)
+            lbl.Parent = holder
+
+            -- Lưu offset cho mỗi chữ
+            local offset = (i-1) * 18   -- độ lệch pha giữa các chữ
+            task.spawn(function()
+                while lbl and lbl.Parent do
+                    local hue = (hueOffset + offset) % 360
+                    lbl.TextColor3 = Color3.fromHSV(hue/360, 1, 1)
+                    task.wait()
+                end
+            end)
+        end
+    end
+
+    -- Tăng hue toàn bộ
+    RunService.Heartbeat:Connect(function(dt)
+        hueOffset = (hueOffset + dt * 90) % 360   -- tốc độ tổng thể
+    end)
+end
+
+createPerLetterRainbow()

@@ -1,65 +1,202 @@
---// Rainbow per-letter (mỗi ký tự lệch pha một chút)
+--// ULTRA FPS BOOST • Premium Edition
+--// Clean visual + subtle success indicator
+
+local Lighting   = game:GetService("Lighting")
+local Players    = game:GetService("Players")
 local RunService = game:GetService("RunService")
-local Players = game:GetService("Players")
+local Workspace  = game:GetService("Workspace")
+local UserInputService = game:GetService("UserInputService")
+
 local lp = Players.LocalPlayer
+local STONE_COLOR = Color3.fromRGB(108, 108, 108)
 
-local TEXT = "PREMIUM EDITION  •  FPS BOOST"
-
-local function createPerLetterRainbow()
+-- ────────────────────────────────────────────────
+--  Premium-style floating indicator (góc dưới phải)
+-- ────────────────────────────────────────────────
+local function createStatusLabel()
     local sg = Instance.new("ScreenGui")
+    sg.Name = "UltraBoostOverlay"
     sg.IgnoreGuiInset = true
     sg.ResetOnSpawn = false
-    sg.Parent = lp:WaitForChild("PlayerGui")
+    sg.Parent = lp:WaitForChild("PlayerGui", 8)
 
-    local holder = Instance.new("Frame")
-    holder.Size = UDim2.new(0, 0, 0, 34)
-    holder.Position = UDim2.new(1, -20, 1, -54)          -- góc dưới phải
-    holder.BackgroundTransparency = 1
-    holder.Parent = sg
+    local frame = Instance.new("Frame")
+    frame.Size = UDim2.new(0, 180, 0, 38)
+    frame.Position = UDim2.new(1, -190, 1, -48)
+    frame.BackgroundTransparency = 0.92
+    frame.BackgroundColor3 = Color3.fromRGB(12, 12, 14)
+    frame.BorderSizePixel = 0
+    frame.ClipsDescendants = true
+    frame.Parent = sg
 
-    local uiList = Instance.new("UIListLayout")
-    uiList.FillDirection = Enum.FillDirection.Horizontal
-    uiList.HorizontalAlignment = Enum.HorizontalAlignment.Center
-    uiList.VerticalAlignment = Enum.VerticalAlignment.Center
-    uiList.Parent = holder
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(0, 10)
+    corner.Parent = frame
 
-    local hueOffset = 0
+    local stroke = Instance.new("UIStroke")
+    stroke.Color = Color3.fromRGB(60, 160, 255)
+    stroke.Transparency = 0.75
+    stroke.Thickness = 1.2
+    stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+    stroke.Parent = frame
 
-    for i = 1, #TEXT do
-        local char = TEXT:sub(i,i)
-        if char == " " then
-            local space = Instance.new("TextLabel")
-            space.Size = UDim2.new(0, 10, 0, 34)  -- khoảng cách giữa chữ
-            space.BackgroundTransparency = 1
-            space.Text = ""
-            space.Parent = holder
-        else
-            local lbl = Instance.new("TextLabel")
-            lbl.Size = UDim2.new(0, 18, 0, 34)
-            lbl.BackgroundTransparency = 1
-            lbl.Font = Enum.Font.GothamBlack
-            lbl.Text = char
-            lbl.TextSize = 24
-            lbl.TextStrokeTransparency = 0.75
-            lbl.TextStrokeColor3 = Color3.new(0,0,0)
-            lbl.Parent = holder
+    local gradient = Instance.new("UIGradient")
+    gradient.Color = ColorSequence.new{
+        ColorSequenceKeypoint.new(0.00, Color3.fromRGB(255,255,255)),
+        ColorSequenceKeypoint.new(1.00, Color3.fromRGB(140,180,255)),
+    }
+    gradient.Rotation = 35
+    gradient.Transparency = NumberSequence.new{
+        NumberSequenceKeypoint.new(0.0, 0.88),
+        NumberSequenceKeypoint.new(0.5, 0.65),
+        NumberSequenceKeypoint.new(1.0, 0.88),
+    }
+    gradient.Parent = frame
 
-            -- Lưu offset cho mỗi chữ
-            local offset = (i-1) * 18   -- độ lệch pha giữa các chữ
-            task.spawn(function()
-                while lbl and lbl.Parent do
-                    local hue = (hueOffset + offset) % 360
-                    lbl.TextColor3 = Color3.fromHSV(hue/360, 1, 1)
-                    task.wait()
-                end
-            end)
+    local label = Instance.new("TextLabel")
+    label.Size = UDim2.new(1, -12, 1, -4)
+    label.Position = UDim2.new(0, 6, 0, 2)
+    label.BackgroundTransparency = 1
+    label.Font = Enum.Font.GothamBold
+    label.Text = "NOUS FPS DETECTED"
+    label.TextColor3 = Color3.fromRGB(195, 215, 255)
+    label.TextSize = 13
+    label.TextXAlignment = Enum.TextXAlignment.Center
+    label.TextTransparency = 0.38
+    label.Parent = frame
+
+    -- hiệu ứng fade nhẹ nhàng
+    task.spawn(function()
+        task.wait(1.2)
+        for i = 0.38, 0.72, 0.014 do
+            label.TextTransparency = i
+            task.wait(0.035)
         end
-    end
+        for i = 0.72, 0.35, -0.008 do
+            label.TextTransparency = i
+            task.wait(0.028)
+        end
+    end)
 
-    -- Tăng hue toàn bộ
-    RunService.Heartbeat:Connect(function(dt)
-        hueOffset = (hueOffset + dt * 90) % 360   -- tốc độ tổng thể
+    return sg
+end
+
+-- ────────────────────────────────────────────────
+--  Character cleaning (player / npc / unit / enemy)
+-- ────────────────────────────────────────────────
+local function isCharacterModel(m)
+    return m:IsA("Model") and m:FindFirstChildWhichIsA("Humanoid", true)
+end
+
+local function cleanCharacter(model)
+    if not model then return end
+
+    task.spawn(function()
+        for _, v in model:GetDescendants() do
+            if     v:IsA("Shirt") or v:IsA("Pants") or v:IsA("ShirtGraphic")
+                or v:IsA("BodyColors") or v:IsA("Accessory") or v:IsA("Hat")
+                or v:IsA("Decal") or v:IsA("Texture") or v:IsA("SpecialMesh")
+                or v:IsA("MeshPart") or v:IsA("Animator") or v:IsA("Animation") then
+                
+                v:Destroy()
+                
+            elseif v:IsA("BasePart") or v:IsA("Part") or v:IsA("MeshPart") then
+                v.Material     = Enum.Material.SmoothPlastic
+                v.Color        = Color3.fromRGB(142, 142, 142)
+                v.CastShadow   = false
+                v.Reflectance  = 0
+                v.Transparency = 1   -- comment dòng này nếu muốn giữ hình dạng thay vì ẩn hoàn toàn
+            end
+        end
     end)
 end
 
-createPerLetterRainbow()
+-- ────────────────────────────────────────────────
+--  World optimization
+-- ────────────────────────────────────────────────
+local function optimizeWorld(obj)
+    if not obj:IsDescendantOf(Workspace) then return end
+    if obj:IsDescendantOf(lp.Character) then return end
+
+    if obj:IsA("BasePart") then
+        obj.Material    = Enum.Material.SmoothPlastic
+        obj.Color       = STONE_COLOR
+        obj.CastShadow  = false
+        obj.Reflectance = 0
+    end
+
+    if obj:IsA("Decal") or obj:IsA("Texture") or obj:IsA("SurfaceAppearance")
+    or obj:IsA("ParticleEmitter") or obj:IsA("Trail") or obj:IsA("Beam")
+    or obj:IsA("Fire") or obj:IsA("Smoke") or obj:IsA("Sparkles")
+    or obj:IsA("Explosion") or obj:IsA("Highlight")
+    or obj:IsA("PointLight") or obj:IsA("SurfaceLight") or obj:IsA("SpotLight") then
+        
+        obj:Destroy()
+    end
+end
+
+-- ────────────────────────────────────────────────
+--  Initialization
+-- ────────────────────────────────────────────────
+do
+    -- Lighting
+    pcall(function()
+        Lighting.GlobalShadows    = false
+        Lighting.FogEnd           = 1e9
+        Lighting.Brightness       = 1.9
+        Lighting.Ambient          = Color3.new(1,1,1)
+        Lighting.OutdoorAmbient   = Color3.new(1,1,1)
+        Lighting.ColorShift_Top   = Color3.new(1,1,1)
+        Lighting.Technology       = Enum.Technology.Compatibility
+
+        local sky = Lighting:FindFirstChildWhichIsA("Sky")
+        if sky then sky:Destroy() end
+    end)
+
+    -- Map
+    for _, obj in Workspace:GetDescendants() do
+        optimizeWorld(obj)
+    end
+    Workspace.DescendantAdded:Connect(optimizeWorld)
+
+    -- Local player
+    if lp.Character then
+        cleanCharacter(lp.Character)
+    end
+    lp.CharacterAdded:Connect(function(char)
+        task.wait(0.4)
+        cleanCharacter(char)
+    end)
+
+    -- Other players
+    for _, p in Players:GetPlayers() do
+        if p ~= lp and p.Character then
+            cleanCharacter(p.Character)
+        end
+    end
+    Players.PlayerAdded:Connect(function(p)
+        p.CharacterAdded:Connect(function(c)
+            task.wait(0.4)
+            cleanCharacter(c)
+        end)
+    end)
+
+    -- NPCs / Mobs / Units
+    for _, obj in Workspace:GetDescendants() do
+        if isCharacterModel(obj) then
+            cleanCharacter(obj)
+        end
+    end
+    Workspace.DescendantAdded:Connect(function(obj)
+        if isCharacterModel(obj) then
+            task.delay(0.25, function()
+                cleanCharacter(obj)
+            end)
+        end
+    end)
+
+    -- Hiển thị indicator premium
+    createStatusLabel()
+
+    print("ULTRA FPS BOOST • Premium Edition loaded")
+end

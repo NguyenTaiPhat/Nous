@@ -1,0 +1,224 @@
+--// ULTRA FPS BOOST - Tactical Anime Edition 2025
+--// Premium Minimal Luxury GUI + Advanced Animation
+
+local Lighting       = game:GetService("Lighting")
+local Players        = game:GetService("Players")
+local RunService     = game:GetService("RunService")
+local TweenService   = game:GetService("TweenService")
+local Workspace      = game:GetService("Workspace")
+local lp             = Players.LocalPlayer
+
+local STONE_COLOR    = Color3.fromRGB(108, 108, 108)
+local HIDE_ALPHA     = 1
+
+local DESTROY_CLASSES = {
+    "Decal", "Texture", "SurfaceAppearance", "ParticleEmitter", "Trail", "Beam",
+    "Fire", "Smoke", "Sparkles", "BloomEffect", "BlurEffect", "ColorCorrectionEffect",
+    "DepthOfFieldEffect", "SunRaysEffect", "PointLight", "SurfaceLight", "SpotLight",
+    "Explosion", "Highlight"
+}
+
+local AVOID_FOLDERS = {"Camera", "Terrain", "NPC", "Units", "Mobs"}
+
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+--  Premium Luxury GUI + Animation
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+local function createPremiumStatusLabel()
+    local sg = Instance.new("ScreenGui")
+    sg.Name = "PremiumBoostOverlay"
+    sg.IgnoreGuiInset = true
+    sg.ResetOnSpawn = false
+    sg.Parent = lp:WaitForChild("PlayerGui", 8)
+
+    -- Frame chính
+    local frame = Instance.new("Frame")
+    frame.Size = UDim2.new(0, 140, 0, 28)                  -- kích thước nhỏ, thanh lịch
+    frame.Position = UDim2.new(1, -160, 1, -38)
+    frame.BackgroundColor3 = Color3.fromRGB(16, 16, 20)
+    frame.BackgroundTransparency = 1
+    frame.BorderSizePixel = 0
+    frame.ClipsDescendants = true
+    frame.Parent = sg
+
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(0, 8)
+    corner.Parent = frame
+
+    local stroke = Instance.new("UIStroke")
+    stroke.Color = Color3.fromRGB(85, 135, 255)
+    stroke.Transparency = 0.55
+    stroke.Thickness = 1.1
+    stroke.Parent = frame
+
+    -- Status dot (điểm sáng premium)
+    local dot = Instance.new("Frame")
+    dot.Size = UDim2.new(0, 7, 0, 7)
+    dot.Position = UDim2.new(0, 9, 0.5, -3.5)
+    dot.BackgroundColor3 = Color3.fromRGB(85, 135, 255)
+    dot.BorderSizePixel = 0
+    dot.Parent = frame
+
+    local dotCorner = Instance.new("UICorner")
+    dotCorner.CornerRadius = UDim.new(1, 0)
+    dotCorner.Parent = dot
+
+    -- Text
+    local label = Instance.new("TextLabel")
+    label.Size = UDim2.new(1, -38, 1, 0)
+    label.Position = UDim2.new(0, 24, 0, 0)
+    label.BackgroundTransparency = 1
+    label.Font = Enum.Font.GothamSemibold
+    label.Text = "PREMIUM OPTIMIZED"
+    label.TextColor3 = Color3.fromRGB(225, 230, 255)
+    label.TextSize = 12.5
+    label.TextXAlignment = Enum.TextXAlignment.Left
+    label.TextTransparency = 0.12
+    label.Parent = frame
+
+    -- Animation 1: Fade-in + Scale-in khi load
+    frame.Size = UDim2.new(0, 110, 0, 22)
+    local entryTween = TweenService:Create(frame, TweenInfo.new(0.85, Enum.EasingStyle.Quint, Enum.EasingDirection.Out), {
+        Size = UDim2.new(0, 140, 0, 28),
+        BackgroundTransparency = 0.32
+    })
+    entryTween:Play()
+
+    -- Animation 2: Breathing pulse cho TextLabel
+    task.spawn(function()
+        while frame.Parent do
+            TweenService:Create(label, TweenInfo.new(2.4, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {TextTransparency = 0.28}):Play()
+            task.wait(2.4)
+            TweenService:Create(label, TweenInfo.new(2.4, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {TextTransparency = 0.12}):Play()
+            task.wait(2.4)
+        end
+    end)
+
+    -- Animation 3: Pulse cho Status Dot (rất sang trọng)
+    task.spawn(function()
+        while dot.Parent do
+            TweenService:Create(dot, TweenInfo.new(1.1, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {Size = UDim2.new(0, 9, 0, 9)}):Play()
+            task.wait(1.1)
+            TweenService:Create(dot, TweenInfo.new(1.1, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut), {Size = UDim2.new(0, 7, 0, 7)}):Play()
+            task.wait(1.1)
+        end
+    end)
+
+    return sg
+end
+
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+--  World & Character Optimization (giữ nguyên tối ưu)
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+local function isImportantSystemFolder(obj)
+    if not obj:IsA("Folder") then return false end
+    local name = obj.Name
+    for _, avoid in AVOID_FOLDERS do
+        if name:find(avoid, 1, true) then return true end
+    end
+    return false
+end
+
+local function shouldOptimizePart(part)
+    if part:IsDescendantOf(lp.Character) then return false end
+    if part.Parent and isImportantSystemFolder(part.Parent) then return false end
+    return true
+end
+
+local function optimizePart(part)
+    if not shouldOptimizePart(part) then return end
+    part.Material = Enum.Material.SmoothPlastic
+    part.Color = STONE_COLOR
+    part.CastShadow = false
+    part.Reflectance = 0
+    part.Transparency = HIDE_ALPHA
+end
+
+local function cleanVisuals(obj)
+    if table.find(DESTROY_CLASSES, obj.ClassName) then
+        obj:Destroy()
+        return
+    end
+    if obj:IsA("BasePart") or obj:IsA("MeshPart") or obj:IsA("Part") then
+        optimizePart(obj)
+    end
+end
+
+local function isHumanoidModel(model)
+    return model:IsA("Model") and model:FindFirstChildWhichIsA("Humanoid", true)
+end
+
+local function minimalCleanCharacter(model)
+    if not model or not model.Parent then return end
+    for _, v in model:GetDescendants() do
+        if (v:IsA("BasePart") or v:IsA("MeshPart")) and v.Name ~= "HumanoidRootPart" and v.Name ~= "Head" then
+            v.Transparency = HIDE_ALPHA
+            v.Material = Enum.Material.SmoothPlastic
+            v.Color = STONE_COLOR
+            v.CastShadow = false
+        elseif v:IsA("Decal") or v:IsA("Texture") or v:IsA("SpecialMesh") or v:IsA("Shirt") or v:IsA("Pants") or v:IsA("Accessory") or v:IsA("Hat") or v:IsA("BodyColors") then
+            v:Destroy()
+        end
+    end
+end
+
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+--  Core Initialization
+-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+-- Lighting
+pcall(function()
+    Lighting.GlobalShadows = false
+    Lighting.FogEnd = 100000
+    Lighting.Brightness = 1.8
+    Lighting.Ambient = Color3.new(1,1,1)
+    Lighting.OutdoorAmbient = Color3.new(1,1,1)
+    Lighting.EnvironmentDiffuseScale = 0
+    Lighting.EnvironmentSpecularScale = 0
+    local sky = Lighting:FindFirstChildWhichIsA("Sky")
+    if sky then sky:Destroy() end
+end)
+
+-- Optimize toàn bộ Workspace
+for _, obj in Workspace:GetDescendants() do
+    if obj:IsA("BasePart") then
+        cleanVisuals(obj)
+    elseif table.find(DESTROY_CLASSES, obj.ClassName) then
+        obj:Destroy()
+    elseif isHumanoidModel(obj) then
+        task.defer(minimalCleanCharacter, obj)
+    end
+end
+
+Workspace.DescendantAdded:Connect(function(obj)
+    if obj:IsA("BasePart") then
+        cleanVisuals(obj)
+    elseif table.find(DESTROY_CLASSES, obj.ClassName) then
+        obj:Destroy()
+    elseif isHumanoidModel(obj) then
+        task.delay(0.20, minimalCleanCharacter, obj)
+    end
+end)
+
+-- Character handling
+local function onCharacterAdded(char)
+    task.delay(0.35, minimalCleanCharacter, char)
+end
+
+if lp.Character then task.delay(0.4, minimalCleanCharacter, lp.Character) end
+lp.CharacterAdded:Connect(onCharacterAdded)
+
+for _, p in Players:GetPlayers() do
+    if p ~= lp and p.Character then
+        task.delay(0.4, minimalCleanCharacter, p.Character)
+    end
+end
+Players.PlayerAdded:Connect(function(p)
+    p.CharacterAdded:Connect(function(c) task.delay(0.35, minimalCleanCharacter, c) end)
+end)
+
+-- Khởi tạo GUI premium
+createPremiumStatusLabel()
+
+print("ULTRA FPS BOOST • Premium Tactical Edition loaded successfully")
